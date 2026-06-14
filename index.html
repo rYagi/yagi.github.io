@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POCKET CATCH DX</title>
+<style>
+  :root {
+    --bg-dark: #1f2a17;
+    --bg-mid: #3b5b31;
+    --bg-light: #7b9f3a;
+    --lcd: #b8cf6a;
+    --lcd-deep: #6f8c31;
+    --line: #243019;
+    --ink: #13210f;
+    --white-ink: #e4f3a6;
+    --danger: #314d1e;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at top, #5f7a30 0%, #31451f 35%, #1c2615 100%);
+    color: var(--ink);
+    font-family: Monaco, Menlo, "Courier New", monospace;
+  }
+
+  .shell {
+    width: min(92vw, 760px);
+    padding: 18px 18px 24px;
+    border: 5px solid #11180e;
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, #c8d87b 0%, #8ea748 55%, #718637 100%);
+    box-shadow:
+      0 20px 50px rgba(0, 0, 0, 0.38),
+      inset 0 2px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -8px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .brand-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .brand {
+    font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--ink);
+    text-shadow: 2px 2px 0 rgba(228, 243, 166, 0.6);
+  }
+
+  .sub {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+  }
+
+  .screen-wrap {
+    padding: 16px;
+    border: 4px solid #1a2411;
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, #657d31 0%, #35471f 100%);
+    box-shadow:
+      inset 0 0 0 3px rgba(228, 243, 166, 0.14),
+      inset 0 10px 22px rgba(0, 0, 0, 0.25);
+  }
+
+  .hud {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .panel {
+    min-height: 56px;
+    padding: 8px 10px;
+    border: 3px solid var(--line);
+    border-radius: 10px;
+    background: rgba(184, 207, 106, 0.95);
+    box-shadow: inset 0 0 0 2px rgba(36, 48, 25, 0.2);
+  }
+
+  .panel .label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .panel .value {
+    display: block;
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 700;
+  }
+
+  .screen {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 10 / 7;
+    overflow: hidden;
+    border: 5px solid #11180e;
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, #d7eaa0 0%, #c4db7a 40%, #9ab34a 100%);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        rgba(20, 31, 15, 0.1) 0,
+        rgba(20, 31, 15, 0.1) 2px,
+        transparent 2px,
+        transparent 8px
+      );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.25), transparent 34%),
+      linear-gradient(180deg, transparent 0%, rgba(17, 24, 14, 0.08) 100%);
+    pointer-events: none;
+    z-index: 11;
+  }
+
+  .arena {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .grid {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(rgba(36, 48, 25, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36, 48, 25, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.65;
+  }
+
+  .catcher {
+    position: absolute;
+    width: 92px;
+    height: 52px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 4px solid var(--line);
+    border-top: 10px solid var(--line);
+    border-bottom-width: 7px;
+    border-radius: 12px 12px 16px 16px;
+    background:
+      linear-gradient(180deg, rgba(228, 243, 166, 0.45) 0%, rgba(184, 207, 106, 0.92) 100%);
+    box-shadow:
+      0 0 0 2px rgba(228, 243, 166, 0.22),
+      0 0 24px rgba(19, 33, 15, 0.18);
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .catcher::before {
+    content: "CATCH";
+    position: absolute;
+    inset: 14px 0 auto;
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.12em;
+  }
+
+  .catcher::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: -13px;
+    height: 10px;
+    border: 4px solid var(--line);
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    background: rgba(228, 243, 166, 0.35);
+  }
+
+  .target {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+    image-rendering: pixelated;
+    filter:
+      drop-shadow(3px 4px 0 rgba(19, 33, 15, 0.28))
+      saturate(0.75)
+      contrast(1.05);
+    z-index: 5;
+  }
+
+  .target.fast {
+    filter:
+      drop-shadow(0 0 12px rgba(228, 243, 166, 0.9))
+      drop-shadow(3px 4px 0 rgba(19, 33, 15, 0.28))
+      saturate(0.8)
+      contrast(1.1);
+  }
+
+  .trail {
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(36, 48, 25, 0.17);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .popup {
+    position: absolute;
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--ink);
+    text-shadow: 2px 2px 0 rgba(228, 243, 166, 0.7);
+    z-index: 8;
+    pointer-events: none;
+  }
+
+  .popup.fast {
+    font-size: 24px;
+    color: #17270f;
+  }
+
+  .message {
+    position: absolute;
+    left: 50%;
+    top: 22px;
+    transform: translateX(-50%);
+    min-width: min(88%, 420px);
+    padding: 10px 14px;
+    border: 4px solid var(--line);
+    border-radius: 10px;
+    background: rgba(184, 207, 106, 0.95);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.6;
+    z-index: 9;
+    box-shadow: 0 8px 18px rgba(19, 33, 15, 0.15);
+  }
+
+  .message.hidden {
+    display: none;
+  }
+
+  .flash {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: rgba(228, 243, 166, 0.26);
+    pointer-events: none;
+    z-index: 7;
+  }
+
+  .flash.on {
+    animation: flashPulse 180ms steps(2, end);
+  }
+
+  @keyframes flashPulse {
+    0% {
+      opacity: 0.72;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  button {
+    border: 3px solid #12180e;
+    border-radius: 999px;
+    padding: 10px 18px;
+    min-width: 124px;
+    background:
+      linear-gradient(180deg, #d9ea98 0%, #a9c35b 100%);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    box-shadow:
+      0 5px 0 #4b6325,
+      0 10px 16px rgba(0, 0, 0, 0.22);
+  }
+
+  button:active {
+    transform: translateY(3px);
+    box-shadow:
+      0 2px 0 #4b6325,
+      0 5px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .legend {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 12px;
+    border: 3px solid var(--line);
+    border-radius: 12px;
+    background: rgba(184, 207, 106, 0.9);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .credit {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    opacity: 0.84;
+  }
+
+  @media (max-width: 640px) {
+    .shell {
+      width: min(96vw, 760px);
+      padding: 14px 14px 18px;
+      border-radius: 18px;
+    }
+
+    .hud {
+      grid-template-columns: 1fr;
+    }
+
+    .panel {
+      min-height: 0;
+    }
+
+    .controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .buttons {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    button {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .legend {
+      min-width: 0;
+    }
+
+    .message {
+      top: 12px;
+      font-size: 13px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand-row">
+      <div class="brand">POCKET CATCH DX</div>
+      <div class="sub">GB STYLE TOUCH GAME</div>
+    </div>
+
+    <div class="screen-wrap">
+      <div class="hud">
+        <div class="panel">
+          <span class="label">SCORE</span>
+          <span class="value" id="scoreValue">0</span>
+        </div>
+        <div class="panel">
+          <span class="label">HI SCORE</span>
+          <span class="value" id="hiScoreValue">0</span>
+        </div>
+        <div class="panel">
+          <span class="label">TIME</span>
+          <span class="value" id="timeValue">45.0</span>
+        </div>
+      </div>
+
+      <div class="screen" id="screen">
+        <div class="arena" id="arena">
+          <div class="grid"></div>
+          <div class="flash" id="flash"></div>
+          <div class="message" id="message">
+            さわって START<br>
+            `right.png` をキャッチしよう
+          </div>
+          <div class="catcher" id="catcher"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="buttons">
+        <button id="startButton" type="button">START</button>
+        <button id="resetButton" type="button">RESET</button>
+      </div>
+      <div class="legend">
+        画面をタッチしてキャッチャーを動かします。<br>
+        ふつうの速さは 10点。<br>
+        きらっと速いレア個体は 100点です。
+      </div>
+    </div>
+
+    <div class="credit">MOVE BY TOUCH / DRAG / MOUSE</div>
+  </div>
+
+<script>
+  const arena = document.getElementById("arena");
+  const catcher = document.getElementById("catcher");
+  const message = document.getElementById("message");
+  const flash = document.getElementById("flash");
+  const scoreValue = document.getElementById("scoreValue");
+  const hiScoreValue = document.getElementById("hiScoreValue");
+  const timeValue = document.getElementById("timeValue");
+  const startButton = document.getElementById("startButton");
+  const resetButton = document.getElementById("resetButton");
+
+  const HI_SCORE_KEY = "pocket-catch-dx-hi-score";
+  const ROUND_TIME = 45;
+  const CATCHER = { width: 92, height: 52 };
+  const state = {
+    running: false,
+    score: 0,
+    hiScore: Number(localStorage.getItem(HI_SCORE_KEY) || 0),
+    timeLeft: ROUND_TIME,
+    spawnCooldown: 0.6,
+    lastFrame: 0,
+    targets: [],
+    popups: [],
+    pointerId: null,
+    catcherX: 0,
+    catcherY: 0
+  };
+
+  hiScoreValue.textContent = state.hiScore;
+
+  function arenaRect() {
+    return arena.getBoundingClientRect();
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function setMessage(text) {
+    message.innerHTML = text;
+    message.classList.remove("hidden");
+  }
+
+  function hideMessage() {
+    message.classList.add("hidden");
+  }
+
+  function updateHud() {
+    scoreValue.textContent = state.score;
+    timeValue.textContent = state.timeLeft.toFixed(1);
+    hiScoreValue.textContent = state.hiScore;
+  }
+
+  function positionCatcher(x, y) {
+    const bounds = arenaRect();
+    const limitedX = clamp(x, CATCHER.width / 2, bounds.width - CATCHER.width / 2);
+    const limitedY = clamp(y, CATCHER.height / 2, bounds.height - CATCHER.height / 2);
+
+    state.catcherX = limitedX;
+    state.catcherY = limitedY;
+
+    catcher.style.left = limitedX + "px";
+    catcher.style.top = limitedY + "px";
+  }
+
+  function centerCatcher() {
+    const bounds = arenaRect();
+    positionCatcher(bounds.width / 2, bounds.height * 0.72);
+  }
+
+  function clearTargets() {
+    for (const target of state.targets) {
+      target.el.remove();
+      target.trail.remove();
+    }
+    state.targets = [];
+  }
+
+  function clearPopups() {
+    for (const popup of state.popups) {
+      popup.el.remove();
+    }
+    state.popups = [];
+  }
+
+  function resetRound() {
+    state.running = false;
+    state.score = 0;
+    state.timeLeft = ROUND_TIME;
+    state.spawnCooldown = 0.4;
+    state.lastFrame = 0;
+    clearTargets();
+    clearPopups();
+    centerCatcher();
+    updateHud();
+    setMessage("さわって START<br>`right.png` をキャッチしよう");
+  }
+
+  function startRound() {
+    state.running = true;
+    state.score = 0;
+    state.timeLeft = ROUND_TIME;
+    state.spawnCooldown = 0.2;
+    state.lastFrame = 0;
+    clearTargets();
+    clearPopups();
+    centerCatcher();
+    updateHud();
+    hideMessage();
+  }
+
+  function finishRound() {
+    state.running = false;
+    if (state.score > state.hiScore) {
+      state.hiScore = state.score;
+      localStorage.setItem(HI_SCORE_KEY, String(state.hiScore));
+    }
+    updateHud();
+    setMessage("TIME UP<br>SCORE " + state.score + "<br>もう一度 START");
+  }
+
+  function spawnTarget() {
+    const bounds = arenaRect();
+    const isFast = Math.random() < 0.18;
+    const speedBase = isFast ? 420 : 150;
+    const speedRange = isFast ? 130 : 90;
+    const speed = speedBase + Math.random() * speedRange + (ROUND_TIME - state.timeLeft) * (isFast ? 1.8 : 0.8);
+    const size = isFast ? 34 : 48;
+    const margin = size + 18;
+    const edge = Math.floor(Math.random() * 4);
+    let x = 0;
+    let y = 0;
+
+    if (edge === 0) {
+      x = -margin;
+      y = Math.random() * bounds.height;
+    } else if (edge === 1) {
+      x = bounds.width + margin;
+      y = Math.random() * bounds.height;
+    } else if (edge === 2) {
+      x = Math.random() * bounds.width;
+      y = -margin;
+    } else {
+      x = Math.random() * bounds.width;
+      y = bounds.height + margin;
+    }
+
+    const aimX = clamp(
+      state.catcherX + (Math.random() * 180 - 90),
+      size,
+      bounds.width - size
+    );
+    const aimY = clamp(
+      state.catcherY + (Math.random() * 180 - 90),
+      size,
+      bounds.height - size
+    );
+    const angle = Math.atan2(aimY - y, aimX - x);
+    const vx = Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+
+    const el = document.createElement("img");
+    el.src = "right.png";
+    el.alt = "target";
+    el.className = isFast ? "target fast" : "target";
+    el.style.width = size + "px";
+    el.style.height = size + "px";
+    arena.appendChild(el);
+
+    const trail = document.createElement("div");
+    trail.className = "trail";
+    arena.appendChild(trail);
+
+    state.targets.push({
+      el,
+      trail,
+      x,
+      y,
+      vx,
+      vy,
+      size,
+      points: isFast ? 100 : 10,
+      fast: isFast
+    });
+  }
+
+  function triggerFlash() {
+    flash.classList.remove("on");
+    void flash.offsetWidth;
+    flash.classList.add("on");
+  }
+
+  function addPopup(text, x, y, fast) {
+    const el = document.createElement("div");
+    el.className = fast ? "popup fast" : "popup";
+    el.textContent = text;
+    arena.appendChild(el);
+
+    state.popups.push({
+      el,
+      x,
+      y,
+      vy: fast ? -54 : -42,
+      life: 0.8
+    });
+  }
+
+  function catchTarget(index) {
+    const target = state.targets[index];
+    state.score += target.points;
+    if (state.score > state.hiScore) {
+      state.hiScore = state.score;
+    }
+    addPopup(target.fast ? "100点!" : "10点", target.x, target.y, target.fast);
+    if (target.fast) {
+      triggerFlash();
+    }
+    target.el.remove();
+    target.trail.remove();
+    state.targets.splice(index, 1);
+    updateHud();
+  }
+
+  function updateTargets(dt) {
+    const bounds = arenaRect();
+    const catchRadiusX = CATCHER.width * 0.42;
+    const catchRadiusY = CATCHER.height * 0.42;
+
+    for (let i = state.targets.length - 1; i >= 0; i -= 1) {
+      const target = state.targets[i];
+      target.x += target.vx * dt;
+      target.y += target.vy * dt;
+
+      const angle = Math.atan2(target.vy, target.vx);
+      target.el.style.left = target.x - target.size / 2 + "px";
+      target.el.style.top = target.y - target.size / 2 + "px";
+      target.el.style.transform = "rotate(" + angle + "rad)";
+
+      const trailLength = target.fast ? 50 : 34;
+      target.trail.style.width = trailLength + "px";
+      target.trail.style.height = target.fast ? "8px" : "6px";
+      target.trail.style.left = target.x - Math.cos(angle) * trailLength - trailLength / 2 + "px";
+      target.trail.style.top = target.y - Math.sin(angle) * trailLength - 3 + "px";
+      target.trail.style.transform = "rotate(" + angle + "rad)";
+
+      const dx = Math.abs(target.x - state.catcherX);
+      const dy = Math.abs(target.y - state.catcherY);
+      if (dx < catchRadiusX + target.size * 0.22 && dy < catchRadiusY + target.size * 0.22) {
+        catchTarget(i);
+        continue;
+      }
+
+      if (
+        target.x < -target.size * 2 ||
+        target.x > bounds.width + target.size * 2 ||
+        target.y < -target.size * 2 ||
+        target.y > bounds.height + target.size * 2
+      ) {
+        target.el.remove();
+        target.trail.remove();
+        state.targets.splice(i, 1);
+      }
+    }
+  }
+
+  function updatePopups(dt) {
+    for (let i = state.popups.length - 1; i >= 0; i -= 1) {
+      const popup = state.popups[i];
+      popup.life -= dt;
+      popup.y += popup.vy * dt;
+      popup.el.style.left = popup.x + "px";
+      popup.el.style.top = popup.y + "px";
+      popup.el.style.opacity = String(clamp(popup.life / 0.8, 0, 1));
+      if (popup.life <= 0) {
+        popup.el.remove();
+        state.popups.splice(i, 1);
+      }
+    }
+  }
+
+  function updateSpawn(dt) {
+    state.spawnCooldown -= dt;
+    if (state.spawnCooldown <= 0) {
+      spawnTarget();
+      const pressure = 1 - state.timeLeft / ROUND_TIME;
+      const minGap = Math.max(0.14, 0.46 - pressure * 0.2);
+      const maxGap = Math.max(0.24, 0.78 - pressure * 0.3);
+      state.spawnCooldown = minGap + Math.random() * (maxGap - minGap);
+    }
+  }
+
+  function tick(timestamp) {
+    if (!state.lastFrame) {
+      state.lastFrame = timestamp;
+    }
+    const dt = Math.min(0.032, (timestamp - state.lastFrame) / 1000);
+    state.lastFrame = timestamp;
+
+    if (state.running) {
+      state.timeLeft = Math.max(0, state.timeLeft - dt);
+      updateSpawn(dt);
+      updateTargets(dt);
+      updatePopups(dt);
+      updateHud();
+      if (state.timeLeft <= 0) {
+        finishRound();
+      }
+    } else {
+      updatePopups(dt);
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  function handlePointer(event) {
+    const bounds = arenaRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+    positionCatcher(x, y);
+  }
+
+  arena.addEventListener("pointerdown", event => {
+    state.pointerId = event.pointerId;
+    arena.setPointerCapture(event.pointerId);
+    handlePointer(event);
+    if (!state.running) {
+      startRound();
+    }
+  });
+
+  arena.addEventListener("pointermove", event => {
+    if (state.pointerId === event.pointerId) {
+      handlePointer(event);
+    }
+  });
+
+  arena.addEventListener("pointerup", event => {
+    if (state.pointerId === event.pointerId) {
+      state.pointerId = null;
+    }
+  });
+
+  arena.addEventListener("pointercancel", event => {
+    if (state.pointerId === event.pointerId) {
+      state.pointerId = null;
+    }
+  });
+
+  startButton.addEventListener("click", () => {
+    startRound();
+  });
+
+  resetButton.addEventListener("click", () => {
+    resetRound();
+  });
+
+  window.addEventListener("resize", () => {
+    if (state.running) {
+      positionCatcher(state.catcherX, state.catcherY);
+    } else {
+      centerCatcher();
+    }
+  });
+
+  centerCatcher();
+  updateHud();
+  requestAnimationFrame(tick);
+</script>
+</body>
+</html>
